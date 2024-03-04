@@ -1,5 +1,5 @@
 import sys
-from redblue_demo.server.server import Server
+from redblue_demo.server.server import Server, ServerConfig
 
 
 def usage():
@@ -16,7 +16,7 @@ def main():
     except ValueError:
         usage()
     addr = args[1:]
-    server = Server.from_config({"index": index, "addr": addr})
+    server = Server.from_config(ServerConfig(index, addr))
     server.run()
 
 
