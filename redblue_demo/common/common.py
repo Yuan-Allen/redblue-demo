@@ -29,7 +29,7 @@ class Request:
 # Response class definition
 class Response:
     def __init__(
-        self, status: int, balance: float, message: Optional[str] = ""
+        self, status: int, balance: float = 0, message: Optional[str] = ""
     ) -> None:
         self.status: int = status
         self.balance: float = balance

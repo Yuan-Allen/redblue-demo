@@ -3,16 +3,18 @@ This module implements the server class for the RedBlue consistency protocol.
 """
 
 import threading
-import xmlrpc.client
+import copy
+import time
 from xmlrpc.server import SimpleXMLRPCServer
 
 from queue import Queue
 from collections import deque
-from typing import List, NamedTuple
-from redblue_demo.common.bank_storage import BankStorage
-from redblue_demo.common.shadow_op import ShadowOP
+from typing import List, NamedTuple, Tuple
+from redblue_demo.client.client import Client
+from redblue_demo.common.bank_storage import NUM_ACCOUNTS, BankStorage
+from redblue_demo.common.shadow_op import ShadowOp
 from redblue_demo.common.vector_clock import VectorClock
-from redblue_demo.common.common import Request
+from redblue_demo.common.common import COLOR, REQ, Request, Response
 
 
 class ServerConfig:
@@ -111,53 +113,97 @@ class Server:
             for i, addr in enumerate(self.addrs):
                 if i == self.id:
                     continue
-                self.peers[i] = xmlrpc.client.ServerProxy(addr)
+                self.peers[i] = Client(addr)
             print(f"server {self.id}: peer connection established")
-            self.main_loop()
+            self._main_loop()
 
         peer_thread = threading.Thread(target=setup_peers)
         peer_thread.start()
         server.serve_forever()
 
-    def set_token_timeout(self) -> None:
-        """
-        Sets the token timeout.
+    def _set_token_timeout(self) -> None:
+        def timeout():
+            time.sleep(1)
+            self.token_queue.put(0)
 
-        This method is responsible for implementing the functionality
-        to set the token timeout.
-        """
-        raise NotImplementedError("TODO: Implement this functionality")
+        threading.Thread(target=timeout).start()
 
-    def primary(self) -> bool:
-        """
-        Checks if the server is the primary server.
+    def _primary(self) -> bool:
+        return self.has_token and self.max_r == self.now.red()
 
-        Returns:
-            bool: True if the server is the primary server, False otherwise.
-        """
-        raise NotImplementedError("TODO: Implement this functionality")
+    def _generate_shadow(
+        self, req: Request, primary: bool
+    ) -> Tuple[ShadowOp, Response, bool]:
+        shadow = ShadowOp(
+            aid=req.aid, depend=copy.deepcopy(self.now), server_id=self.id
+        )
+        balance = self.bank.get_account(req.aid).get_balance()
 
-    def do_request(self, req_item: RequestItem) -> bool:
-        """
-        Processes a request item.
+        if req.op == REQ.DEPOSIT:
+            shadow.amount = req.amount
+            shadow.color = COLOR.BLUE
+            res = Response(status=0, balance=balance + req.amount)
+            ok = True
+        elif req.op == REQ.WITHDRAW:
+            if primary:
+                if balance >= req.amount:
+                    shadow.amount = -req.amount
+                    shadow.color = COLOR.RED
+                    res = Response(status=0, balance=balance - req.amount)
+                else:
+                    shadow.amount = 0
+                    shadow.color = COLOR.BLUE
+                    res = Response(
+                        status=-1, balance=balance, message="Insufficient balance"
+                    )
+                ok = True
+            else:
+                ok = False
+        elif req.op == REQ.INTEREST:
+            delta = self.bank.get_account(req.aid).compute_interest()
+            shadow.amount = delta
+            shadow.color = COLOR.BLUE
+            res = Response(status=0, balance=balance + delta)
+            ok = True
+        else:
+            raise ValueError("Unknown operation")
 
-        Args:
-            req_item (RequestItem): The request item to process.
+        return shadow, res, ok
 
-        Returns:
-            bool: True if the request item was processed successfully, False otherwise.
-        """
-        raise NotImplementedError("TODO: Implement this functionality")
+    def _do_request(self, req_item: RequestItem) -> bool:
+        primary = self._primary()
+        req = req_item.req
 
-    def main_loop(self) -> None:
-        """
-        The main loop of the server.
+        # verify request
+        if req.aid < 0 or req.aid >= NUM_ACCOUNTS:
+            req_item.res_queue.put(Response(status=-1, message="Invalid Account Id"))
+            return True
 
-        This method is responsible for processing the token queue, shadow queue,
-        request queue, operation list, and red list.
-        """
+        # try generate shadow op
+        shadow, res, ok = self._generate_shadow(req, primary)
+        if ok:
+            req_item.res_queue.put(res)
+            self._dispatch_shadow_op(shadow)
+            return True
+        if not ok and primary:
+            print(f"failed {req.op}: ")
+        return False
+
+    def _dispatch_shadow_op(self, shadow: ShadowOp):
+        shadow.apply(self.bank)
+        self.now.tick(shadow.server_id, shadow.color)
+        self.now.print(self.id)
+        if self.now.red() > self.max_r:
+            self.max_r = self.now.red()
+
+        for peer in self.peers:
+            if peer is not None:
+                assert isinstance(peer, Client)
+                peer.add_shadow_op_async(shadow)
+
+    def _main_loop(self) -> None:
         if self.id == 0:
-            self.set_token_timeout()
+            self._set_token_timeout()
             self.has_token = True
 
         while True:
@@ -173,17 +219,17 @@ class Server:
                     else:
                         self.max_r = max_r
                         self.has_token = True
-                        self.set_token_timeout()
+                        self._set_token_timeout()
 
                 # Process shadow_queue
                 while not self.shadow_queue.empty():
-                    shadow: ShadowOP = self.shadow_queue.get()
+                    shadow: ShadowOp = self.shadow_queue.get()
                     self.op_list.append(shadow)
 
                 # Process req_queue
                 while not self.req_queue.empty():
                     req_item = self.req_queue.get()
-                    if not self.do_request(req_item):
+                    if not self._do_request(req_item):
                         self.red_list.append(req_item)
 
                 # Process op_list
@@ -204,9 +250,9 @@ class Server:
                         break
 
                 # Process red_list if primary
-                if self.primary():
+                if self._primary():
                     for req_item in list(self.red_list):
-                        ok = self.do_request(req_item)
+                        ok = self._do_request(req_item)
                         if not ok:
                             raise ValueError(f"server {self.id}: process redList fail")
                     # Clear red_list after processing all items
@@ -214,3 +260,54 @@ class Server:
 
             except ValueError as e:
                 print(f"ValueError in main_loop: {e}")
+
+    def pass_token(self, max_r: int) -> None:
+        """
+        This method is a RPC handler provided by the server.
+        Passes the token to the next server.
+
+        Args:
+            max_r (int): The maximum red value seen by the server.
+        """
+        self.token_queue.put(max_r)
+
+    def add_shadow_op(self, shadow: ShadowOp) -> None:
+        """
+        This method is a RPC handler provided by the server.
+        Adds a shadow operation to the queue.
+
+        Args:
+            shadow (ShadowOp): The shadow operation to add.
+        """
+        self.shadow_queue.put(shadow)
+
+    def request(self, req: Request) -> Response:
+        """
+        This method is a RPC handler provided by the server.
+        It puts the request into the request queue and returns the response.
+
+        Args:
+            req (Request): The request object to be processed.
+
+        Returns:
+            Response: The response object generated by processing the request.
+
+        Raises:
+            ValueError: If the request processing fails.
+        """
+        res_queue = Queue()
+        req_item = RequestItem(req=req, res_queue=res_queue)
+        self.req_queue.put(req_item)
+        res = res_queue.get()
+
+        if res is None:
+            raise ValueError("Server.Request failed")
+        assert isinstance(res, Response)
+        return res
+
+    def dump(self) -> None:
+        """
+        This method is a RPC handler provided by the server.
+        Prints the server ID.
+        """
+        print(f"server {self.id}")
