@@ -1,4 +1,7 @@
 from redblue_demo.common.shadow_op import ShadowOp
+import xmlrpc.client
+import asyncio
+from redblue_demo.common.common import SERVER_DELAY
 
 
 class Client:
@@ -7,7 +10,8 @@ class Client:
     """
 
     def __init__(self, addr: str) -> None:
-        raise NotImplementedError("TODO: Implement this functionality")
+        self.server = xmlrpc.client.ServerProxy(addr)
 
-    def add_shadow_op_async(self, shadow_op: ShadowOp) -> None:
-        raise NotImplementedError("TODO: Implement this functionality")
+    async def add_shadow_op_async(self, shadow_op: ShadowOp) -> None:
+        await asyncio.sleep(SERVER_DELAY * 0.001)
+        self.server.add_shadow_op(shadow_op)

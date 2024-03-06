@@ -1,7 +1,7 @@
-from bank_storage import BankStorage
-from common import COLOR
-from vector_clock import VectorClock
-from account import Account
+from redblue_demo.common.bank_storage import BankStorage
+from redblue_demo.common.common import COLOR
+from redblue_demo.common.vector_clock import VectorClock
+from redblue_demo.common.account import Account
 
 
 class ShadowOp:

@@ -1,4 +1,4 @@
-from account import Account
+from redblue_demo.common.account import Account
 
 NUM_ACCOUNTS = 10000
 INITIAL_BALANCE = 1000.0

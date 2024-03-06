@@ -1,4 +1,4 @@
-from common import COLOR
+from redblue_demo.common.common import COLOR
 import copy
 
 

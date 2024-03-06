@@ -1,4 +1,4 @@
-from common import INTEREST_RATE
+from redblue_demo.common.common import INTEREST_RATE
 
 
 class Account:
