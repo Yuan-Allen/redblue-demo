@@ -1,3 +1,6 @@
+from common import INTEREST_RATE
+
+
 class Account:
     def __init__(self, aid: int, balance: float) -> None:
         self.aid = aid
@@ -6,5 +9,8 @@ class Account:
     def get_balance(self) -> float:
         return self.balance
 
+    def set_balance(self, balance) -> None:
+        self.balance = balance
+
     def compute_interest(self) -> float:
-        raise NotImplementedError("TODO: Implement this functionality")
+        return self.balance * INTEREST_RATE

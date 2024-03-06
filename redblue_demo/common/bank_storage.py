@@ -1,12 +1,14 @@
-from redblue_demo.common.account import Account
-
+from account import Account
 
 NUM_ACCOUNTS = 10000
+INITIAL_BALANCE = 1000.0
 
 
 class BankStorage:
     def __init__(self) -> None:
-        raise NotImplementedError("TODO: Implement this functionality")
+        self.accounts = []
+        for i in range(NUM_ACCOUNTS):
+            self.accounts.append(Account(i, INITIAL_BALANCE))
 
     def get_account(self, aid: int) -> Account:
-        raise NotImplementedError("TODO: Implement this functionality")
+        return self.accounts[aid]
