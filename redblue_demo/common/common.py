@@ -16,6 +16,7 @@ class REQ(Enum):
     DEPOSIT = auto()
     WITHDRAW = auto()
     INTEREST = auto()
+    CHECK = auto()
 
 
 # Request class definition

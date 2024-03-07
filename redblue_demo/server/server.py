@@ -169,11 +169,15 @@ class Server:
             else:
                 ok = False
         elif req.op == REQ.INTEREST:
-            print("req.aid: ", req.aid)
             delta = self.bank.get_account(req.aid).compute_interest()
             shadow.amount = delta
             shadow.color = COLOR.BLUE
             res = Response(status=0, balance=balance + delta)
+            ok = True
+        elif req.op == REQ.CHECK:
+            shadow.amount = 0
+            shadow.color = COLOR.BLUE
+            res = Response(status=0, balance=balance)
             ok = True
         else:
             raise ValueError("Unknown operation")
@@ -199,6 +203,8 @@ class Server:
         return False
 
     def _dispatch_shadow_op(self, shadow: ShadowOp):
+        if shadow.amount == 0:
+            return  # read only, no need to dispatch shadow op
         shadow.apply(self.bank)
         self.now.tick(shadow.server_id, shadow.color)
         self.now.print(self.id)
@@ -225,12 +231,12 @@ class Server:
                         if self.peers[next_id] is not None:
                             self.has_token = False
                             self.peers[next_id].pass_token(self.max_r)
-                            print(f"server {self.id}: pass token to {next_id}")
+                            # print(f"server {self.id}: pass token to {next_id}")
                     else:
                         self.max_r = max_r
                         self.has_token = True
                         self._set_token_timeout()
-                        print(f"server {self.id}: received token")
+                        # print(f"server {self.id}: received token")
 
                 # Process shadow_queue
                 while not self.shadow_queue.empty():
@@ -242,7 +248,7 @@ class Server:
                     req_item = self.req_queue.get()
                     if not self._do_request(req_item):
                         self.red_list.append(req_item)
-                        print(f"server {self.id}: add to redList")
+                        # print(f"server {self.id}: add to redList")
 
                 # Process op_list
                 while True:
@@ -260,7 +266,7 @@ class Server:
 
                     if not todo:
                         break
-                    print(f"server {self.id}: process shadowOp")
+                    # print(f"server {self.id}: process shadowOp")
 
                 # Process red_list if primary
                 if self._primary():
@@ -321,9 +327,14 @@ class Server:
             req = Request(aid, op, amount)
 
         elif len(req_dict) == 2:
-            op = REQ.INTEREST
-            aid = req_dict["aid"]
-            req = Request(aid, op)
+            if req_dict["cmd"] == "INTEREST":
+                op = REQ.INTEREST
+                aid = req_dict["aid"]
+                req = Request(aid, op)
+            elif req_dict["cmd"] == "CHECK":
+                op = REQ.CHECK
+                aid = req_dict["aid"]
+                req = Request(aid, op)
 
         req_item = RequestItem(req=req, res_queue=res_queue)
         self.req_queue.put(req_item)

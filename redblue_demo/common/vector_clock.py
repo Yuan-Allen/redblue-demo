@@ -7,7 +7,7 @@ class VectorClock:
     R: int
 
     def __init__(self, num_server: int) -> None:
-        self.B = [_ for _ in range(num_server)]
+        self.B = [0] * num_server
         self.R = 0
 
     def ready(self, now: "VectorClock") -> bool:
@@ -36,7 +36,7 @@ class VectorClock:
         return old
 
     def print(self, server_id: int) -> None:
-        print(f"#{server_id} [")
+        print(f"#{server_id} [", end="")
         for i in range(len(self.B)):
-            print(f" {self.B[i]}")
-        print(f" ; {self.R} ]\n")
+            print(f" {self.B[i]}", end="")
+        print(f" ; {self.R} ]")

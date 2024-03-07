@@ -17,6 +17,7 @@ class Client:
 
     def __init__(self, addr: str) -> None:
         self.rpc_client = ServerProxy(addr)
+        self.addr = addr
 
     def pass_token(self, max_r: int) -> None:
         def task():
@@ -31,8 +32,9 @@ class Client:
     def add_shadow_op_async(self, op: ShadowOp) -> None:
         def task():
             time.sleep(SERVER_DELAY)
+            rpc_client = ServerProxy(self.addr)
             try:
-                self.rpc_client.add_shadow_op(op)
+                rpc_client.add_shadow_op(op)
             except ValueError as e:
                 print(f"client.AddShadowOp() : {e}")
 
