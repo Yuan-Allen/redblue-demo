@@ -12,6 +12,9 @@ class Client:
     def __init__(self, addr: str) -> None:
         self.server = xmlrpc.client.ServerProxy(addr)
 
+    def pass_token(self, max_r: int) -> None:
+        raise NotImplementedError("TODO: Implement pass_token")
+
     async def add_shadow_op_async(self, shadow_op: ShadowOp) -> None:
         await asyncio.sleep(SERVER_DELAY * 0.001)
         self.server.add_shadow_op(shadow_op)

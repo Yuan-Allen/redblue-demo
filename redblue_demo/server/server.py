@@ -105,7 +105,8 @@ class Server:
         and starts the main loop.
         """
         # Setup RPC server
-        server = SimpleXMLRPCServer((self.addrs[self.id], 8000), allow_none=True)
+        host, port = self.addrs[self.id].split(":")
+        server = SimpleXMLRPCServer((host, int(port)), allow_none=True)
         server.register_instance(self)
 
         # Setup peer connection
@@ -113,7 +114,7 @@ class Server:
             for i, addr in enumerate(self.addrs):
                 if i == self.id:
                     continue
-                self.peers[i] = Client(addr)
+                self.peers[i] = Client(f"http://{addr}")
             print(f"server {self.id}: peer connection established")
             self._main_loop()
 
