@@ -171,7 +171,6 @@ class Server:
             ok = True
         else:
             raise ValueError("Unknown operation")
-
         return shadow, res, ok
 
     def _do_request(self, req_item: RequestItem) -> bool:
@@ -216,9 +215,9 @@ class Server:
                 while not self.token_queue.empty():
                     max_r = self.token_queue.get()
                     if self.has_token:
-                        self.has_token = False
                         next_id = (self.id + 1) % len(self.peers)
                         if self.peers[next_id] is not None:
+                            self.has_token = False
                             self.peers[next_id].pass_token(self.max_r)
                     else:
                         self.max_r = max_r
