@@ -3,7 +3,7 @@ from typing import Optional
 
 # Constants
 INTEREST_RATE: float = 0.04
-SERVER_DELAY: int = 200  # in milliseconds
+SERVER_DELAY: int = 0.2
 
 
 class COLOR:

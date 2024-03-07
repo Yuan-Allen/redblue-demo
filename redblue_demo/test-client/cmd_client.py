@@ -1,6 +1,6 @@
 import sys
 from redblue_demo.client.client import Client
-from redblue_demo.common.common import COLOR, REQ, Request, Response
+from redblue_demo.common.common import Response
 
 if __name__ == "__main__":
     client = Client(sys.argv[1])

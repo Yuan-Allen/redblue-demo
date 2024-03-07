@@ -22,3 +22,16 @@ class ShadowOp:
     def apply(self, bank: BankStorage) -> None:
         account = bank.get_account(self.aid)
         account.balance = account.get_balance() + self.amount
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "ShadowOp":
+        shadow_op = cls(
+            data["aid"],
+            data["server_id"],
+            VectorClock(len(data["depend"]["B"])),
+            data["amount"],
+        )
+        shadow_op.depend.B = data["depend"]["B"]
+        shadow_op.depend.R = data["depend"]["R"]
+        shadow_op.color = COLOR.BLUE if data["color"] == 0 else COLOR.RED
+        return shadow_op

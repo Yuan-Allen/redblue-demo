@@ -219,10 +219,12 @@ class Server:
                         if self.peers[next_id] is not None:
                             self.has_token = False
                             self.peers[next_id].pass_token(self.max_r)
+                            print(f"server {self.id}: pass token to {next_id}")
                     else:
                         self.max_r = max_r
                         self.has_token = True
                         self._set_token_timeout()
+                        print(f"server {self.id}: received token")
 
                 # Process shadow_queue
                 while not self.shadow_queue.empty():
@@ -234,6 +236,7 @@ class Server:
                     req_item = self.req_queue.get()
                     if not self._do_request(req_item):
                         self.red_list.append(req_item)
+                        print(f"server {self.id}: add to redList")
 
                 # Process op_list
                 while True:
@@ -251,6 +254,7 @@ class Server:
 
                     if not todo:
                         break
+                    print(f"server {self.id}: process shadowOp")
 
                 # Process red_list if primary
                 if self._primary():
@@ -274,7 +278,7 @@ class Server:
         """
         self.token_queue.put(max_r)
 
-    def add_shadow_op(self, shadow: ShadowOp) -> None:
+    def add_shadow_op(self, shadow: dict) -> None:
         """
         This method is a RPC handler provided by the server.
         Adds a shadow operation to the queue.
@@ -282,7 +286,7 @@ class Server:
         Args:
             shadow (ShadowOp): The shadow operation to add.
         """
-        self.shadow_queue.put(shadow)
+        self.shadow_queue.put(ShadowOp.from_dict(shadow))
 
     def request(self, req_dict: dict) -> dict:
         """
