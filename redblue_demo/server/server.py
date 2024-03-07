@@ -9,7 +9,7 @@ from xmlrpc.server import SimpleXMLRPCServer
 
 from queue import Queue
 from collections import deque
-from typing import List, NamedTuple, Tuple
+from typing import List, NamedTuple, Optional, Tuple
 from redblue_demo.client.client import Client
 from redblue_demo.common.bank_storage import NUM_ACCOUNTS, BankStorage
 from redblue_demo.common.shadow_op import ShadowOp
@@ -135,11 +135,12 @@ class Server:
 
     def _generate_shadow(
         self, req: Request, primary: bool
-    ) -> Tuple[ShadowOp, Response, bool]:
+    ) -> Tuple[ShadowOp, Optional[Response], bool]:
         shadow = ShadowOp(
             aid=req.aid, depend=copy.deepcopy(self.now), server_id=self.id
         )
         balance = self.bank.get_account(req.aid).get_balance()
+        res = None
 
         if req.op == REQ.DEPOSIT:
             shadow.amount = req.amount
@@ -183,6 +184,7 @@ class Server:
         # try generate shadow op
         shadow, res, ok = self._generate_shadow(req, primary)
         if ok:
+            assert isinstance(res, Response)
             req_item.res_queue.put(res)
             self._dispatch_shadow_op(shadow)
             return True
@@ -305,14 +307,14 @@ class Server:
                 op = REQ.DEPOSIT
             elif req_dict["cmd"] == "WITHDRAW":
                 op = REQ.WITHDRAW
-                
+
             req = Request(aid, op, amount)
-            
+
         elif len(req_dict) == 2:
             op = REQ.INTEREST
             aid = req_dict["aid"]
             req = Request(aid, op)
-            
+
         req_item = RequestItem(req=req, res_queue=res_queue)
         self.req_queue.put(req_item)
         res = res_queue.get()
@@ -321,9 +323,9 @@ class Server:
             raise ValueError("Server.Request failed")
         assert isinstance(res, Response)
         res_dict = {
-                "status": res.status,
-                "balance": res.balance,
-                "message": res.message
+            "status": res.status,
+            "balance": res.balance,
+            "message": res.message,
         }
         return res_dict
 
