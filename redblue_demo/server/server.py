@@ -163,6 +163,7 @@ class Server:
             else:
                 ok = False
         elif req.op == REQ.INTEREST:
+            print("req.aid: ", req.aid)
             delta = self.bank.get_account(req.aid).compute_interest()
             shadow.amount = delta
             shadow.color = COLOR.BLUE

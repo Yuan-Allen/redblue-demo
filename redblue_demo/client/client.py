@@ -31,7 +31,7 @@ class Client:
         asyncio.create_task(self.do_add_shadow_op_async(shadow))
         
     def request(self, req: dict) -> dict:
-        self.rpcClient.request(req)
+        return self.rpcClient.request(req)
     
     def dump(self) -> None:
         self.rpcClient.dump()

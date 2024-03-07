@@ -23,7 +23,6 @@ if __name__ == "__main__":
                     "aid": arg1,
                     "amount": arg2
                 })
-                print(res_dict)
             elif cmd == "withdraw":
             # 执行取款操作
                 res_dict = client.request({
@@ -32,6 +31,8 @@ if __name__ == "__main__":
                     "amount": arg2
                 })
         elif len(parts) == 2:
+            cmd, arg1 = parts
+            arg1 = int(arg1)
             res_dict = client.request({
                 "cmd": "INTEREST",
                 "aid": arg1
@@ -42,6 +43,4 @@ if __name__ == "__main__":
         if res_dict:
             res = Response(res_dict["status"],
                     res_dict["balance"],
-                    res_dict["message"])
-            print(res)          
-                
+                    res_dict["message"])        
