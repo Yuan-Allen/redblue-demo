@@ -2,6 +2,7 @@
 This module implements the server class for the RedBlue consistency protocol.
 """
 
+from socketserver import ThreadingMixIn
 import threading
 import copy
 import time
@@ -15,6 +16,10 @@ from redblue_demo.common.bank_storage import NUM_ACCOUNTS, BankStorage
 from redblue_demo.common.shadow_op import ShadowOp
 from redblue_demo.common.vector_clock import VectorClock
 from redblue_demo.common.common import COLOR, REQ, Request, Response
+
+
+class ThreadXMLRPCServer(ThreadingMixIn, SimpleXMLRPCServer):
+    pass
 
 
 class ServerConfig:
@@ -107,7 +112,8 @@ class Server:
         # Setup RPC server
         ip, port = self.addrs[self.id].split(":")
         port = int(port)
-        server = SimpleXMLRPCServer((ip, port), allow_none=True)
+        # server = SimpleXMLRPCServer((ip, port), allow_none=True)
+        server = ThreadXMLRPCServer((ip, port), allow_none=True)
         server.register_instance(self)
 
         # Setup peer connection
