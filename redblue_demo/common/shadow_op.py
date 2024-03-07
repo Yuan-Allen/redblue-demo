@@ -21,4 +21,4 @@ class ShadowOp:
 
     def apply(self, bank: BankStorage) -> None:
         account = bank.get_account(self.aid)
-        account.set_balance(account.get_balance() + self.amount)
+        account.balance = account.get_balance() + self.amount

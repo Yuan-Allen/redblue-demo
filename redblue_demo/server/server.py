@@ -105,8 +105,9 @@ class Server:
         and starts the main loop.
         """
         # Setup RPC server
-        host, port = self.addrs[self.id].split(":")
-        server = SimpleXMLRPCServer((host, int(port)), allow_none=True)
+        ip, port = self.addrs[self.id].split(":")
+        port = int(port)
+        server = SimpleXMLRPCServer((ip, port), allow_none=True)
         server.register_instance(self)
 
         # Setup peer connection
@@ -174,7 +175,6 @@ class Server:
     def _do_request(self, req_item: RequestItem) -> bool:
         primary = self._primary()
         req = req_item.req
-
         # verify request
         if req.aid < 0 or req.aid >= NUM_ACCOUNTS:
             req_item.res_queue.put(Response(status=-1, message="Invalid Account Id"))
@@ -282,7 +282,7 @@ class Server:
         """
         self.shadow_queue.put(shadow)
 
-    def request(self, req: Request) -> Response:
+    def request(self, req_dict: dict) -> dict:
         """
         This method is a RPC handler provided by the server.
         It puts the request into the request queue and returns the response.
@@ -297,6 +297,22 @@ class Server:
             ValueError: If the request processing fails.
         """
         res_queue = Queue()
+        req = None
+        if len(req_dict) == 3:
+            aid = req_dict["aid"]
+            amount = req_dict["amount"]
+            if req_dict["cmd"] == "DEPOSIT":
+                op = REQ.DEPOSIT
+            elif req_dict["cmd"] == "WITHDRAW":
+                op = REQ.WITHDRAW
+                
+            req = Request(aid, op, amount)
+            
+        elif len(req_dict) == 2:
+            op = REQ.INTEREST
+            aid = req_dict["aid"]
+            req = Request(aid, op)
+            
         req_item = RequestItem(req=req, res_queue=res_queue)
         self.req_queue.put(req_item)
         res = res_queue.get()
@@ -304,7 +320,12 @@ class Server:
         if res is None:
             raise ValueError("Server.Request failed")
         assert isinstance(res, Response)
-        return res
+        res_dict = {
+                "status": res.status,
+                "balance": res.balance,
+                "message": res.message
+        }
+        return res_dict
 
     def dump(self) -> None:
         """

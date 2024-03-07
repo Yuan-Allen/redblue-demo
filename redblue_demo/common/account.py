@@ -1,6 +1,4 @@
 from redblue_demo.common.common import INTEREST_RATE
-
-
 class Account:
     def __init__(self, aid: int, balance: float) -> None:
         self.aid = aid
