@@ -1,6 +1,15 @@
-from redblue_demo.client.client import Client
+"""
+This module contains a test client script for the redblue_demo application.
+
+The script creates multiple instances of the `Client` class and performs various operations 
+such as deposit, interest calculation, withdrawal, 
+and checking account balance on different servers.
+"""
+
 import sys
 import time
+from redblue_demo.client.client import Client
+
 
 if __name__ == "__main__":
     clients = []
