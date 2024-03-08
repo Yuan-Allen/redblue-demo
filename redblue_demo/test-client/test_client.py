@@ -41,7 +41,7 @@ def case1(rpc_clients: List[Client]):
     print(f"[account 20] CHECK server 0: {res}")
     res = rpc_clients[1].request({"cmd": "CHECK", "aid": 20})
     print(f"[account 20] CHECK server 1: {res}")
-    res = rpc_clients[0].request({"cmd": "CHECK", "aid": 20})
+    res = rpc_clients[2].request({"cmd": "CHECK", "aid": 20})
     print(f"[account 20] CHECK server 2: {res}")
 
 
@@ -59,7 +59,7 @@ def case2(rpc_clients: List[Client]):
     """
     print("------------test case 2-------------")
     res = rpc_clients[0].request({"cmd": "WITHDRAW", "aid": 21, "amount": 800})
-    print(f"[account 21] WITHDRAW server 1 (- 800): {res}")
+    print(f"[account 21] WITHDRAW server 0 (- 800): {res}")
     res = rpc_clients[1].request({"cmd": "WITHDRAW", "aid": 21, "amount": 800})
     print(f"[account 21] WITHDRAW server 1 (- 800): {res}")
     time.sleep(5)
@@ -68,7 +68,7 @@ def case2(rpc_clients: List[Client]):
     print(f"[account 21] CHECK server 0: {res}")
     res = rpc_clients[1].request({"cmd": "CHECK", "aid": 21})
     print(f"[account 21] CHECK server 1: {res}")
-    res = rpc_clients[0].request({"cmd": "CHECK", "aid": 21})
+    res = rpc_clients[2].request({"cmd": "CHECK", "aid": 21})
     print(f"[account 21] CHECK server 2: {res}")
 
 
